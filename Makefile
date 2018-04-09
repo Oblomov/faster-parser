@@ -3,10 +3,13 @@ LDFLAGS=-flto
 
 RM ?= rm -rf
 
-check-float: check-float.c parse-float.h
-
 check: check-float
 	./check-float
+
+debug: debug-float
+
+check-float: check-float.c parse-float.h
+debug-float: debug-float.c parse-float.h
 
 clean:
 	$(RM) check-float

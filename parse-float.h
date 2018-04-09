@@ -42,22 +42,48 @@ float base10_to_base2_float(uint64_t m10, int32_t e10)
 
 #define U64_HI1  UINT64_C(0x8000000000000000)
 #define U64_HI3  UINT64_C(0xe000000000000000)
+
+#ifdef DEBUG_PARSE_FLOAT
+	printf("%"PRIu64 "\t%"PRId32 "\t%"PRId32"\n",
+		m10, e10, e2);
+	printf("%#"PRIx64"\n", m10);
+#endif
 	if (e10 > 0) while (e10 > 0) {
 		/* make sure we have room in the higher bits */
 		while (m10 & U64_HI3) {
 			m10 >>= 1;
 			++e2;
 		}
+#ifdef DEBUG_PARSE_FLOAT
+	printf("> %"PRIu64 "\t%"PRId32 "\t%"PRId32"\n",
+		m10, e10, e2);
+	printf("%#"PRIx64"\n", m10);
+#endif
 		m10 *= 5;
 		--e10;
+#ifdef DEBUG_PARSE_FLOAT
+	printf("* %"PRIu64 "\t%"PRId32 "\t%"PRId32"\n",
+		m10, e10, e2);
+	printf("%#"PRIx64"\n", m10);
+#endif
 	} else while (e10 < 0) {
 		/* keep as much room as possible in the lower bits */
 		while (!(m10 & U64_HI1)) {
 			m10 <<= 1;
 			--e2;
 		}
+#ifdef DEBUG_PARSE_FLOAT
+	printf("< %"PRIu64 "\t%"PRId32 "\t%"PRId32"\n",
+		m10, e10, e2);
+	printf("%#"PRIx64"\n", m10);
+#endif
 		m10 /= 5;
 		++e10;
+#ifdef DEBUG_PARSE_FLOAT
+	printf("* %"PRIu64 "\t%"PRId32 "\t%"PRId32"\n",
+		m10, e10, e2);
+	printf("%#"PRIx64"\n", m10);
+#endif
 	}
 
 	// TODO verify if/when this is needed
@@ -68,6 +94,13 @@ float base10_to_base2_float(uint64_t m10, int32_t e10)
 		m10 >>= 1;
 		++e2;
 	}
+#endif
+
+#ifdef DEBUG_PARSE_FLOAT
+	printf("= %"PRIu64 "\t%"PRId32 "\t%"PRId32"\n",
+		m10, e10, e2);
+	printf("%#"PRIx64"\n", m10);
+	printf("e %.12g\n", (float)m10);
 #endif
 
 	/* Cast the mantissa to float, with default rounding mode,
