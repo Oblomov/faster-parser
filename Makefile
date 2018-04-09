@@ -3,6 +3,8 @@ LDFLAGS=-flto
 
 RM ?= rm -rf
 
+all: check-float bench-float debug-float
+
 check: check-float
 	./check-float
 
