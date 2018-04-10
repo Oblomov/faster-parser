@@ -30,6 +30,8 @@ inline int##bits##_t fast_parse_int##bits(const char* from, char **end) \
 \
 	FAST_DIGIT_LOOP(val, c, from) \
 \
+	*end = (char*)from; \
+\
 	return sign*val; \
 } \
 inline uint##bits##_t fast_parse_uint##bits(const char* from, char **end) \
@@ -37,6 +39,8 @@ inline uint##bits##_t fast_parse_uint##bits(const char* from, char **end) \
 	uint##bits##_t val = 0; \
 \
 	FAST_DIGIT_LOOP(val, c, from) \
+\
+	*end = (char*)from; \
 \
 	return val; \
 }
