@@ -72,7 +72,7 @@ int32_t simd_parse_int(const char *from, char **end)
 	__m256i valid = _mm256_andnot_si256(_mm256_cmpgt_epi32(_mm256_setzero_si256(), permutation), digits);
 
 #if DEBUG_SIMD
-	printf("%#8x\t%#8x\t%#8x\t%#8x\t%#8x\t%#8x\t%#8x\t%#8x\t", EXPLODE_SIMD(valid));
+	printf("%#8x %#8x %#8x %#8x %#8x %#8x %#8x %#8x ", EXPLODE_SIMD(valid));
 	printf("%#8x\t", invalid_bitmask);
 	printf("%8d\n", first_invalid_lane);
 #endif
@@ -84,7 +84,7 @@ int32_t simd_parse_int(const char *from, char **end)
 	int32_t sum = _mm256_reduce_epi32(scaled);
 
 #if DEBUG_SIMD
-	printf("%8d\t%8d\t%8d\t%8d\t%8d\t%8d\t%8d\t%8d\t", EXPLODE_SIMD(scaled));
+	printf("%8d %8d %8d %8d %8d %8d %8d %8d ", EXPLODE_SIMD(scaled));
 	printf("%8d\n", sum);
 #endif
 
