@@ -18,13 +18,9 @@
 static inline
 uint32_t _mm256_reduce_epi32(__m256i datum)
 {
-	__m128i p1 = _mm_hadd_epi32(
-		_mm256_extracti128_si256(datum, 0),
-		_mm256_extracti128_si256(datum, 1));
-	// TODO check if going through an intermediate _mm_hadd_pi32
-	// is worth it
-	return	_mm_extract_epi32(p1, 0) + _mm_extract_epi32(p1, 1) +
-		_mm_extract_epi32(p1, 2) + _mm_extract_epi32(p1, 3);
+	uint32_t data[8] __attribute__ ((aligned(32)));
+	_mm256_store_si256((__m256i*)data, datum);
+	return	(data[0] + data[1]) + (data[2] + data[3]) + (data[4]+data[5]) + (data[6]+data[7]);
 }
 
 /* Find the first 32-bit lane that is not masked by the given mask */
