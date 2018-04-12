@@ -2,6 +2,8 @@
 #include <inttypes.h>
 #include <stdio.h>
 
+#include "parse-int.h"
+
 #define DEBUG_SIMD 1
 #define LANE8(v, lane) _mm256_extract_epi32(v, lane)
 #define EXPLODE_SIMD(v) \
@@ -9,7 +11,7 @@
 	LANE8(v, 4), LANE8(v, 5), LANE8(v, 6), LANE8(v, 7)
 
 const char *buffer[] = {
-	"/01234567890",
+	"/12345678901",
 	"1/1234567890",
 	"12/123456789",
 	"123/12345678",
@@ -21,11 +23,12 @@ const char *buffer[] = {
 	"123456789/12",
 	"1234567890/1",
 	"01234567890/",
+	"123456789012",
 };
 
 /* Full horizontal reduction of an 8-wide 32-bit integer lanes vector */
 static inline
-int32_t _mm256_reduce_epi32(__m256i datum)
+uint32_t _mm256_reduce_epi32(__m256i datum)
 {
 	__m128i p1 = _mm_hadd_epi32(
 		_mm256_extracti128_si256(datum, 0),
@@ -51,7 +54,11 @@ uint32_t first_masked_epi32(__m256i mask)
 }
 
 
-int32_t simd_parse_int(const char *from, char **end)
+/* Parse a chunk of up to 8 consecutive ASCII decimal digits, returning
+ * the corresponding numerical value, and setting `delta` to the number of
+ * digits parsed
+ */
+uint32_t simd_parse_int_chunk(const char *from, uint32_t *parsed)
 {
 	/* Lower bound for 'is this a digit' */
 	const __m256i lessthan0 = _mm256_set1_epi32('0' - 1);
@@ -77,11 +84,11 @@ int32_t simd_parse_int(const char *from, char **end)
 	__m256i mask = _mm256_and_si256(ge0, le9);
 
 	/* Index of the first invalid lane */
-	const uint32_t first_invalid_lane = first_unmasked_epi32(mask);
+	const uint32_t parsable = first_unmasked_epi32(mask);
 
 	/* Compute the permutation index for the scaling multipliers.
 	 * This will put negative numbers in the lanes > first_invalid_lane */
-	__m256i permutation = _mm256_sub_epi32(_mm256_set1_epi32(first_invalid_lane), laneidx);;
+	__m256i permutation = _mm256_sub_epi32(_mm256_set1_epi32(parsable), laneidx);;
 
 	/* Selection of the _first_ lanes with valid digits, by masking against the
 	 * lanes with non-negative value in `permutation` */
@@ -92,26 +99,68 @@ int32_t simd_parse_int(const char *from, char **end)
 #if DEBUG_SIMD
 	printf("%#8x %#8x %#8x %#8x %#8x %#8x %#8x %#8x ", EXPLODE_SIMD(valid));
 	printf("%8d ", first_masked_epi32(mask));
-	printf("%8d\n", first_invalid_lane);
+	printf("%8d\n", parsable);
 #endif
 	/* Place the multipliers in the correct place */
 	__m256i mulseq = _mm256_permutevar8x32_epi32(lanemul, permutation);
 	/* Multiply */
 	__m256i scaled = _mm256_mullo_epi32(valid, mulseq);
 	/* Add */
-	int32_t sum = _mm256_reduce_epi32(scaled);
+	uint32_t sum = _mm256_reduce_epi32(scaled);
 
 #if DEBUG_SIMD
 	printf("%8d %8d %8d %8d %8d %8d %8d %8d ", EXPLODE_SIMD(scaled));
 	printf("%8d\n", sum);
 #endif
 
-	if (end) *end = (char*)from + first_invalid_lane;
+	*parsed = parsable;
 	return sum;
 }
 
-int main() {
+static const uint32_t simd_parsed_scale[] = {
+	1, 10, 100, 1000, 10000, 100000,
+	1000000, 10000000, 100000000,
+};
 
+#define SIMD_DIGIT_LOOP(val, c, from) \
+	char c = *from; \
+	while (c >= '0' && c <= '9') { \
+		uint32_t parsed = 0; \
+		uint32_t chunk = simd_parse_int_chunk(from, &parsed); \
+		val = val*simd_parsed_scale[parsed] + chunk; \
+		from += parsed; \
+		c = *from; \
+	}
+
+#define SIMD_PARSE(bits) \
+static inline \
+int##bits##_t simd_parse_int##bits(const char *from, char **end) \
+{ \
+	int##bits##_t val = 0; \
+	int##bits##_t sign = 1; \
+\
+	CHECK_SIGN(sign, from) \
+\
+	SIMD_DIGIT_LOOP(val, c, from) \
+\
+	if (end) *end = (char*)from; \
+	return sign*val; \
+} \
+static inline \
+uint##bits##_t simd_parse_uint##bits(const char *from, char **end) \
+{ \
+	uint##bits##_t val = 0; \
+\
+	SIMD_DIGIT_LOOP(val, c, from) \
+\
+	if (end) *end = (char*)from; \
+	return val; \
+}
+
+SIMD_PARSE(32)
+SIMD_PARSE(64)
+
+int main() {
 	const size_t nbuffers = sizeof(buffer)/sizeof(*buffer);
 	for (size_t b = 0; b < nbuffers; ++b) {
 		printf("%s\n", buffer[b]);
@@ -120,10 +169,10 @@ int main() {
 		char *end = (char*)(buffer[b]);
 
 		from = end;
-		int32_t ret = simd_parse_int(from, &end);
+		uint64_t ret = simd_parse_uint64(from, &end);
 
-		printf("%s", end);
-		printf("%" PRId32 "\n", ret);
+		printf("Parsed: %" PRIu64 "\n", ret);
+		printf("Rest: %s\n\n", end);
 
 	}
 

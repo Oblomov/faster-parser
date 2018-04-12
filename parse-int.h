@@ -18,10 +18,11 @@
 	while (c >= '0' && c <= '9') { \
 		val = val*10 + (c - '0'); \
 		c = *(++from); \
-	} \
+	}
 
 #define FAST_PARSE(bits) \
-inline int##bits##_t fast_parse_int##bits(const char* from, char **end) \
+static inline \
+int##bits##_t fast_parse_int##bits(const char* from, char **end) \
 { \
 	int##bits##_t val = 0; \
 	int##bits##_t sign = 1; \
@@ -34,7 +35,8 @@ inline int##bits##_t fast_parse_int##bits(const char* from, char **end) \
 \
 	return sign*val; \
 } \
-inline uint##bits##_t fast_parse_uint##bits(const char* from, char **end) \
+static inline \
+uint##bits##_t fast_parse_uint##bits(const char* from, char **end) \
 { \
 	uint##bits##_t val = 0; \
 \
