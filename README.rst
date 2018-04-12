@@ -22,7 +22,7 @@ What is this
 ============
 
 A collection of routines to parse integers and floating-point data which
-are considerably (in the whereabous of 2×) faster than the standard
+are considerably (in the whereabouts of 2×) faster than the standard
 library functions. The speed obviously comes at a price, as my routines
 are less robust and less featureful than the standard library ones: they
 are not be intended as *general purpose* replacements for the standard
@@ -33,7 +33,8 @@ flexibility and robustness of the standard library ones can be forgone
 ``fast_parse_{u,}int{32,64}``
 -----------------------------
 
-These are functions that are used to parse a 32- or 64-bit signed or
+Defined in ``parse-int.h``,
+these are functions that are used to parse a 32- or 64-bit signed or
 unsigned integer from its base-10 ASCII representation. No attempt
 is made at skipping leading whitespace, to allow faster parsing in case
 other symbols are used as separators. There is also no overflow check
@@ -47,7 +48,8 @@ the code in the hot path. This is made easier by the provided
 ``fast_parse_float32``
 ----------------------
 
-This function mimicks the behavior of the standard ``strtof``, under the
+Defined in ``parse-float.h``,
+this function mimics the behavior of the standard ``strtof``, under the
 additional assumptions that:
 
 * the source is a base-10 ASCII representation, without thousands
@@ -76,6 +78,17 @@ of digits.
 
 This function converts a combination of unsigned 64-bit integer mantissa
 ``M`` and signed 32-bit integer base-10 exponent ``e10`` into the closest
-32-bit (single precision) IEEE-754 binary floating-point approximatino
+32-bit (single precision) IEEE-754 binary floating-point approximation
 to ``M*pow(10,e10)``. It is used to produce the final output by
 ``fast_parse_float32``.
+
+SIMD parsers
+============
+
+An experimental parser that leverages AVX2 intrinsics is available
+in the ``simd-int.h`` header. This is exposed via
+``simd_parse_{u,}int{32,64}`` functions that mirror the
+``fast_parse_{u,}int{32,64}`` set.
+
+Performance is presently somewhat lackluster: they are still faster
+than the standard library, but not as fast as the ``fast`` variant.
