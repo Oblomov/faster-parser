@@ -43,8 +43,10 @@ int32_t simd_parse_int(const char *from, char **end)
 	const __m256i morethan9 = _mm256_set1_epi32('9' + 1);
 	/* Turn ASCII digit into its value */
 	const __m256i sub0 = _mm256_set1_epi32(-0x30);
-	/* Lane index for permutation */
-	const __m256i laneidx = _mm256_set_epi32(7, 6, 5, 4, 3, 2, 1, 0);
+	/* Lane index for permutation (base-1 because we will subtract this
+	 * from the lane index of the first non-digit
+	 */
+	const __m256i laneidx = _mm256_set_epi32(8, 7, 6, 5, 4, 3, 2, 1);
 	/* Scale multiplier for digit to its positiona value */
 	const __m256i lanemul = _mm256_set_epi32(10000000, 1000000, 100000, 10000, 1000, 100, 10, 1);
 
@@ -64,7 +66,7 @@ int32_t simd_parse_int(const char *from, char **end)
 
 	/* Compute the permutation index for the scaling multipliers.
 	 * This will put negative numbers in the lanes > first_invalid_lane */
-	__m256i permutation = _mm256_sub_epi32(_mm256_set1_epi32(first_invalid_lane-1), laneidx);;
+	__m256i permutation = _mm256_sub_epi32(_mm256_set1_epi32(first_invalid_lane), laneidx);;
 
 	/* Selection of the _first_ lanes with valid digits */
 	__m256i valid = _mm256_andnot_si256(_mm256_cmpgt_epi32(_mm256_setzero_si256(), permutation), digits);
