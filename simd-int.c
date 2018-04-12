@@ -83,8 +83,11 @@ int32_t simd_parse_int(const char *from, char **end)
 	 * This will put negative numbers in the lanes > first_invalid_lane */
 	__m256i permutation = _mm256_sub_epi32(_mm256_set1_epi32(first_invalid_lane), laneidx);;
 
-	/* Selection of the _first_ lanes with valid digits */
-	__m256i valid = _mm256_andnot_si256(_mm256_cmpgt_epi32(_mm256_setzero_si256(), permutation), digits);
+	/* Selection of the _first_ lanes with valid digits, by masking against the
+	 * lanes with non-negative value in `permutation` */
+	__m256i valid = _mm256_andnot_si256(
+		_mm256_cmpgt_epi32(_mm256_setzero_si256(), permutation),
+		digits);
 
 #if DEBUG_SIMD
 	printf("%#8x %#8x %#8x %#8x %#8x %#8x %#8x %#8x ", EXPLODE_SIMD(valid));
