@@ -24,6 +24,7 @@ const char *buffer[] = {
 };
 
 /* Full horizontal reduction of an 8-wide 32-bit integer lanes vector */
+static inline
 int32_t _mm256_reduce_epi32(__m256i datum)
 {
 	__m128i p1 = _mm_hadd_epi32(
@@ -34,6 +35,21 @@ int32_t _mm256_reduce_epi32(__m256i datum)
 	return	_mm_extract_epi32(p1, 0) + _mm_extract_epi32(p1, 1) +
 		_mm_extract_epi32(p1, 2) + _mm_extract_epi32(p1, 3);
 }
+
+/* Find the first 32-bit lane that is not masked by the given mask */
+static inline
+uint32_t first_unmasked_epi32(__m256i mask)
+{
+	return _tzcnt_u32( ~_mm256_movemask_epi8(mask) )  >> 2;
+}
+
+/* Find the first 32-bit lane that is masked by the given mask */
+static inline
+uint32_t first_masked_epi32(__m256i mask)
+{
+	return _tzcnt_u32( _mm256_movemask_epi8(mask) )  >> 2;
+}
+
 
 int32_t simd_parse_int(const char *from, char **end)
 {
@@ -61,8 +77,7 @@ int32_t simd_parse_int(const char *from, char **end)
 	__m256i mask = _mm256_and_si256(ge0, le9);
 
 	/* Index of the first invalid lane */
-	const uint32_t invalid_bitmask = ~_mm256_movemask_epi8(mask);
-	const uint32_t first_invalid_lane = _tzcnt_u32(invalid_bitmask) >> 2;
+	const uint32_t first_invalid_lane = first_unmasked_epi32(mask);
 
 	/* Compute the permutation index for the scaling multipliers.
 	 * This will put negative numbers in the lanes > first_invalid_lane */
@@ -73,7 +88,7 @@ int32_t simd_parse_int(const char *from, char **end)
 
 #if DEBUG_SIMD
 	printf("%#8x %#8x %#8x %#8x %#8x %#8x %#8x %#8x ", EXPLODE_SIMD(valid));
-	printf("%#8x\t", invalid_bitmask);
+	printf("%8d ", first_masked_epi32(mask));
 	printf("%8d\n", first_invalid_lane);
 #endif
 	/* Place the multipliers in the correct place */
