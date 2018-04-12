@@ -31,7 +31,7 @@ int##bits##_t fast_parse_int##bits(const char* from, char **end) \
 \
 	FAST_DIGIT_LOOP(val, c, from) \
 \
-	*end = (char*)from; \
+	if (end) *end = (char*)from; \
 \
 	return sign*val; \
 } \
@@ -42,7 +42,7 @@ uint##bits##_t fast_parse_uint##bits(const char* from, char **end) \
 \
 	FAST_DIGIT_LOOP(val, c, from) \
 \
-	*end = (char*)from; \
+	if (end) *end = (char*)from; \
 \
 	return val; \
 }

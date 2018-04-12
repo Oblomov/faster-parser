@@ -180,7 +180,7 @@ float fast_parse_float32(const char *from, char **end)
 	 * to 'roll back' to the initial value of from,
 	 * and return 0.0f;
 	 */
-	*end = (char*)from;
+	if (end) *end = (char*)from;
 
 	exponent = exponent*expsign - decdig;
 
