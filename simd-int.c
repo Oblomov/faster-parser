@@ -58,24 +58,22 @@ int32_t simd_parse_int(const char *from, char **end)
 	__m256i le9 = _mm256_cmpgt_epi32(morethan9, l256);
 	__m256i mask = _mm256_and_si256(ge0, le9);
 
-	/* Selection of lanes with valid digits */
-	__m256i valid = _mm256_and_si256(digits, mask);
-
 	/* Index of the first invalid lane */
 	const uint32_t invalid_bitmask = ~_mm256_movemask_epi8(mask);
 	const uint32_t first_invalid_lane = _tzcnt_u32(invalid_bitmask) >> 2;
+
+	/* Compute the permutation index for the scaling multipliers.
+	 * This will put negative numbers in the lanes > first_invalid_lane */
+	__m256i permutation = _mm256_sub_epi32(_mm256_set1_epi32(first_invalid_lane-1), laneidx);;
+
+	/* Selection of the _first_ lanes with valid digits */
+	__m256i valid = _mm256_andnot_si256(_mm256_cmpgt_epi32(_mm256_setzero_si256(), permutation), digits);
 
 #if DEBUG_SIMD
 	printf("%#8x\t%#8x\t%#8x\t%#8x\t%#8x\t%#8x\t%#8x\t%#8x\t", EXPLODE_SIMD(valid));
 	printf("%#8x\t", invalid_bitmask);
 	printf("%8d\n", first_invalid_lane);
 #endif
-	/* Compute the permutation index for the scaling multipliers */
-	__m256i permutation = _mm256_sub_epi32(_mm256_set1_epi32(first_invalid_lane-1), laneidx);;
-
-	/* Selection of the _first_ lanes with valid digits */
-	valid = _mm256_andnot_si256(_mm256_cmpgt_epi32(_mm256_setzero_si256(), permutation), valid);
-
 	/* Place the multipliers in the correct place */
 	__m256i mulseq = _mm256_permutevar8x32_epi32(lanemul, permutation);
 	/* Multiply */
