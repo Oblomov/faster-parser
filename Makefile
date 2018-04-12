@@ -3,7 +3,9 @@ LDFLAGS=-flto
 
 RM ?= rm -rf
 
-all: check-float bench-float bench-int debug-float simd-int
+TARGETS=check-float bench-float bench-int debug-float debug-simd
+
+all: $(TARGETS)
 
 check: check-float
 	./check-float
@@ -11,13 +13,14 @@ check: check-float
 bench: bench-float bench-int
 	./bench-float && ./bench-int
 
-debug: debug-float
+debug: debug-float debug-simd
 
 check-float: check-float.c parse-float.h
 debug-float: debug-float.c parse-float.h
+debug-simd: debug-simd.c simd-int.h parse-int.h
 bench-float: bench-float.c parse-float.h
 bench-int: bench-int.c parse-int.h
 
 clean:
-	$(RM) check-float
+	$(RM) $(TARGETS)
 
