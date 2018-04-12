@@ -1,9 +1,9 @@
-CFLAGS=-std=c99 -Wall -Wextra -O3 -g
+CFLAGS=-std=c99 -Wall -Wextra -O3 -g -march=native
 LDFLAGS=-flto
 
 RM ?= rm -rf
 
-all: check-float bench-float bench-int debug-float
+all: check-float bench-float bench-int debug-float simd-int
 
 check: check-float
 	./check-float
